@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스마트 발목 보호대 — Smart Movement Solution</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F5F3;
+    --bg2: #EBEBEA;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.09);
+    --border2: rgba(0,0,0,0.06);
+    --text1: #111110;
+    --text2: #6B6B69;
+    --text3: #9B9B98;
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-dark: #085041;
+    --blue: #378ADD;
+    --amber: #EF9F27;
+    --red: #D85A30;
+    --red-light: #FAECE7;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
+    --shadow-hero: 0 10px 28px rgba(28,28,30,0.22), 0 1px 2px rgba(28,28,30,0.08);
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* 숫자는 모두 tabular nums + 부드러운 색 전환 */
+  .num, .mv, .numval, .rbig, .bal-big, .dr-val, .prog-val,
+  #v-dist, #v-time, #v-pace, #v-steps, #v-stride, #v-shock, #v-fatigue,
+  #h-left, #h-right, #h-diff-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    transition: color 0.4s ease;
+  }
+
+  body {
+    background: #C8C8C4;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 0;
+  }
+
+  /* ── 폰 프레임 ── */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 50px;
+    box-shadow:
+      0 0 0 11px #1C1C1E,
+      0 0 0 12px #3A3A3C,
+      0 40px 100px rgba(0,0,0,0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* 다이나믹 아일랜드 */
+  .dynamic-island {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #1C1C1E;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  /* 상태바 */
+  .status-bar {
+    height: 52px;
+    background: var(--surface);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 700; color: var(--text1); }
+  .status-icons { display: flex; align-items: center; gap: 6px; color: var(--text1); }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 0.5px solid var(--border);
+    padding: 8px 14px; display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .tb-left { display: flex; flex-direction: column; gap: 1px; }
+  .tb-title { font-size: 13px; font-weight: 700; color: var(--text1); }
+  .tb-sub { font-size: 10px; color: var(--text2); }
+  .live-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--green-light); color: var(--green-dark);
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+  }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* 사이드바 → 하단 탭바 */
+  .sidebar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 68px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 0.5px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-around;
+    padding-top: 8px;
+    z-index: 10;
+    border-radius: 0 0 40px 40px;
+  }
+  .logo { display: none; }
+  .nb {
+    width: 56px; height: 48px; border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; border: none; background: transparent;
+    color: var(--text3); font-size: 22px; transition: all 0.15s; gap: 2px;
+  }
+  .nb.on { color: var(--green); }
+  .nb-label { font-size: 9px; font-weight: 600; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .content {
+    flex: 1; padding: 10px 12px 76px;
+    display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+  .content::-webkit-scrollbar { display: none; }
+  .screen { display: none; flex-direction: column; gap: 10px; }
+  .screen.on { display: flex; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border-radius: var(--radius-md);
+    border: 0.5px solid var(--border); padding: 12px 14px;
+    box-shadow: var(--shadow-card);
+  }
+  .clabel {
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px;
+  }
+
+  /* ── METRICS GRID ── */
+  .mg4 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .mg2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .mc { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .ml { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .mv { font-size: 18px; font-weight: 700; color: var(--text1); }
+  .mu { font-size: 11px; color: var(--text3); }
+  .mch { font-size: 11px; margin-top: 4px; }
+  .g { color: #0A6647; } .w { color: #7A4510; } .r { color: #952B10; }
+
+  /* ── BALANCE BAR ── */
+  .bal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .bal-header-title { font-size: 13px; font-weight: 500; color: var(--text2); }
+  .bal-header-target { font-size: 12px; color: var(--text3); }
+  .bal-sides { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+  .bal-side-label { font-size: 12px; color: var(--text2); margin-bottom: 2px; }
+  .bal-big { font-size: 20px; font-weight: 700; }
+  .bal-big.left { color: #1A6FCC; }
+  .bal-big.right { color: #C84B20; }
+  .bal-bar { height: 14px; border-radius: 7px; overflow: hidden; display: flex; margin-bottom: 10px; }
+  .bal-bar-l { background: var(--blue); }
+  .bal-bar-r { background: var(--red); flex: 1; }
+  .bal-note { display: flex; align-items: flex-start; gap: 7px; }
+  .bal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex-shrink: 0; margin-top: 3px; }
+  .bal-note-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .bal-note-text strong { color: var(--text1); }
+
+  /* BALANCE DETAIL dividers */
+  .divider { height: 0.5px; background: var(--border2); margin: 12px 0; }
+  .bal-title { font-size: 12px; font-weight: 600; color: var(--text1); margin-bottom: 6px; }
+  .bal-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+  .bal-bar2 { height: 12px; background: var(--bg2); border-radius: 6px; overflow: hidden; position: relative; }
+  .bf { position: absolute; top: 0; height: 100%; border-radius: 6px; }
+  .bl { left: 0; background: var(--blue); }
+  .br { right: 0; background: var(--red); }
+  .bctr { position: absolute; left: 50%; top: -3px; width: 1.5px; height: 18px; background: var(--border); transform: translateX(-50%); }
+  .bal-note2 { margin-top: 5px; font-size: 11px; }
+
+  /* JOINT GRID */
+  .joint-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+  .jc { background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .jlabel { font-size: 10px; color: var(--text3); margin-bottom: 6px; font-weight: 500; }
+  .jrow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+  .jside { font-size: 10px; color: var(--text2); }
+  .jval { font-size: 13px; font-weight: 600; }
+  .jbar-wrap { height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .jbar-fill { height: 100%; border-radius: 2px; float: left; }
+
+  /* DETAIL ROWS */
+  .body-details { display: flex; flex-direction: column; gap: 7px; }
+  .detail-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .dr-label { font-size: 11px; color: var(--text2); min-width: 60px; }
+  .dr-bar { flex: 1; height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+  .dr-fill { height: 100%; border-radius: 3px; }
+  .dr-val { font-size: 12px; font-weight: 600; min-width: 40px; text-align: right; }
+
+  /* COACH MSG */
+  .coach {
+    background: var(--green-light); border-radius: var(--radius-md);
+    padding: 13px 15px; border-left: 3px solid var(--green);
+    border-top-left-radius: 0; border-bottom-left-radius: 0;
+  }
+  .c-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .c-av {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: white; font-weight: 700;
+  }
+  .c-nm { font-size: 12px; font-weight: 600; color: var(--green-dark); }
+  .c-txt { font-size: 13px; color: var(--green-dark); line-height: 1.6; }
+
+  /* INSIGHT LIST */
+  .ilist { display: flex; flex-direction: column; gap: 8px; }
+  .ii { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .iico { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .ibody { flex: 1; }
+  .ititle { font-size: 12px; font-weight: 600; color: var(--text1); margin-bottom: 3px; }
+  .idesc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+
+  /* PROGRESS */
+  .prog-section { display: flex; flex-direction: column; gap: 10px; }
+  .prog-row { display: flex; flex-direction: column; gap: 4px; }
+  .prog-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+  .prog-val { font-weight: 600; color: var(--text1); }
+  .prog-bg { height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; }
+
+  /* REWARDS */
+  .rg { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+  .rc { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; }
+  .rbig { font-size: 20px; font-weight: 700; color: var(--text1); margin-bottom: 3px; }
+  .rname { font-size: 12px; font-weight: 600; color: var(--text1); margin-bottom: 4px; }
+  .rdesc { font-size: 10px; color: var(--text2); line-height: 1.4; }
+
+  /* NUMROW */
+  .numrow { display: flex; gap: 10px; }
+  .numcard { flex: 1; background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; }
+  .numval { font-size: 18px; font-weight: 700; }
+  .numlb { font-size: 10px; color: var(--text2); margin-top: 3px; }
+
+  /* PHASE TABS */
+  .tabrow { display: flex; gap: 6px; margin-bottom: 4px; }
+  .tb {
+    flex: 1; padding: 8px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border); background: var(--bg);
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    cursor: pointer; transition: all .15s; text-align: center;
+  }
+  .tb.on { background: var(--green); color: white; border-color: var(--green); }
+
+  /* INTENSITY */
+  .irow { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+  .ilb { font-size: 12px; color: var(--text2); min-width: 44px; }
+  .ibar { flex: 1; height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+  .ifill { height: 100%; border-radius: 3px; }
+  .ival { font-size: 12px; font-weight: 600; min-width: 40px; text-align: right; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .lsq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* BATTERY */
+  .batt-wrap { display: flex; align-items: center; gap: 5px; }
+  .batt-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: .04em; }
+  .batt-body {
+    width: 28px; height: 13px;
+    border: 1.5px solid var(--text3);
+    border-radius: 3px;
+    padding: 1.5px;
+    position: relative;
+  }
+  .batt-tip {
+    width: 3px; height: 6px;
+    background: var(--text3);
+    border-radius: 0 2px 2px 0;
+    margin-left: -1px;
+  }
+  .batt-fill {
+    height: 100%;
+    border-radius: 1.5px;
+    transition: width 0.6s ease, background 0.4s;
+  }
+  .batt-pct { font-size: 10px; font-weight: 600; color: var(--text2); min-width: 24px; }
+
+  /* LANG SELECTOR */
+  .lang-selector { display: flex; gap: 4px; align-items: center; }
+  .lang-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: 1.5px solid transparent; background: transparent;
+    font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; line-height: 1;
+  }
+  .lang-btn:hover { background: var(--bg2); }
+  .lang-btn.on { border-color: var(--green); background: var(--green-light); }
+
+  /* CHART */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* BOTTOM BAR */
+  .bbar { display: flex; gap: 10px; padding-top: 4px; }
+  .btnav {
+    flex: 1; padding: 11px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border); background: transparent;
+    font-size: 13px; font-weight: 600; color: var(--text1);
+    cursor: pointer; transition: all .15s;
+  }
+  .btnav:hover { background: var(--bg); }
+  .btnav.pr { background: var(--green); color: white; border-color: var(--green); }
+  .btnav.pr:hover { background: #0F6E56; }
+
+  /* SECTION ROW */
+  .section-row { display: flex; flex-direction: column; gap: 10px; }
+  .section-row .card { flex: 1; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <!-- 상태바 -->
+  <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 16" fill="currentColor"><path d="M1 5C5.5 1 18.5 1 23 5L21 7C17.5 4 6.5 4 3 7L1 5Z"/><path d="M5 9C8 6.5 16 6.5 19 9L17 11C15 9.5 9 9.5 7 11L5 9Z"/><path d="M9 13C10.5 12 13.5 12 15 13L12 16L9 13Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity=".35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/><path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+    </div>
+  </div>
+
+<div class="app">
+
+  <!-- 하단 탭바 -->
+  <div class="sidebar">
+    <button class="nb on" onclick="go('home')">🏠<span class="nb-label">홈</span></button>
+    <button class="nb" onclick="go('workout')">🏃<span class="nb-label">운동</span></button>
+    <button class="nb" onclick="go('insights')">📊<span class="nb-label">분석</span></button>
+    <button class="nb" onclick="go('rewards')">🎁<span class="nb-label">리워드</span></button>
+  </div>
+
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="tb-title" id="ttl">오늘의 발걸음</div>
+        <div class="tb-sub" id="tsub">2026년 5월 26일 · 화요일</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="lang-selector">
+          <button class="lang-btn on" onclick="setLang('ko')" title="한국어">🇰🇷</button>
+          <button class="lang-btn" onclick="setLang('en')" title="English">🇬🇧</button>
+          <button class="lang-btn" onclick="setLang('ja')" title="日本語">🇯🇵</button>
+          <button class="lang-btn" onclick="setLang('zh')" title="中文">🇨🇳</button>
+        </div>
+        <div class="batt-wrap" title="IMU 센서 배터리">
+          <div class="batt-label">IMU</div>
+          <div class="batt-body">
+            <div class="batt-fill" id="batt-fill"></div>
+          </div>
+          <div class="batt-tip"></div>
+          <div class="batt-pct" id="batt-pct">72%</div>
+        </div>
+        <div class="live-pill"><div class="live-dot"></div><span id="live-label">기기 연결됨</span></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ HOME ══ -->
+      <div class="screen on" id="s-home">
+
+        <!-- 거리 / 시간 / 페이스 — 네이티브 스타일 -->
+        <div style="background:#fff;border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;box-shadow:var(--shadow-card);">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:#9B9B98;letter-spacing:.04em;margin-bottom:6px;">거리</div>
+            <div style="font-size:22px;font-weight:700;color:#111;letter-spacing:-0.4px;" id="v-dist">3.24<span style="font-size:11px;font-weight:500;color:#9B9B98;margin-left:2px;">km</span></div>
+          </div>
+          <div style="border-left:0.5px solid rgba(0,0,0,0.06);border-right:0.5px solid rgba(0,0,0,0.06);">
+            <div style="font-size:10px;font-weight:600;color:#9B9B98;letter-spacing:.04em;margin-bottom:6px;">시간</div>
+            <div style="font-size:22px;font-weight:700;color:#111;letter-spacing:-0.4px;" id="v-time">18:32</div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:600;color:#9B9B98;letter-spacing:.04em;margin-bottom:6px;">페이스</div>
+            <div style="font-size:22px;font-weight:700;color:#111;letter-spacing:-0.4px;" id="v-pace">6'30"<span style="font-size:11px;font-weight:500;color:#9B9B98;margin-left:2px;">/km</span></div>
+          </div>
+        </div>
+
+        <!-- 메인 밸런스 카드 -->
+        <div style="background:linear-gradient(180deg,#1C1C1E 0%,#0F0F11 100%);border-radius:24px;padding:20px 20px 18px;box-shadow:var(--shadow-hero);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:.05em;">좌우 밸런스</div>
+            <div style="display:flex;align-items:center;gap:5px;background:rgba(74,222,128,0.12);padding:3px 8px;border-radius:10px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#4ADE80;animation:blink 1.2s infinite;box-shadow:0 0 6px #4ADE80;"></div>
+              <div style="font-size:10px;font-weight:700;color:#86EFAC;letter-spacing:.04em;">LIVE</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;">
+            <div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px;font-weight:500;">왼쪽</div>
+              <div style="font-size:60px;font-weight:800;line-height:0.95;letter-spacing:-2.5px;color:#60A5FA;transition:color 0.3s;"><span id="h-left">64.7</span><span style="font-size:18px;font-weight:600;opacity:.55;margin-left:1px;">%</span></div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.05);border-radius:10px;padding:6px 10px;min-width:62px;">
+              <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:2px;font-weight:500;">편차</div>
+              <div style="font-size:22px;font-weight:700;color:#FCA5A5;line-height:1;" id="h-diff-num">29.4</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px;">%p</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px;font-weight:500;">오른쪽</div>
+              <div style="font-size:60px;font-weight:800;line-height:0.95;letter-spacing:-2.5px;color:#F87171;transition:color 0.3s;"><span id="h-right">35.3</span><span style="font-size:18px;font-weight:600;opacity:.55;margin-left:1px;">%</span></div>
+            </div>
+          </div>
+
+          <div style="height:14px;background:rgba(255,255,255,0.08);border-radius:7px;overflow:hidden;display:flex;position:relative;margin-bottom:16px;">
+            <div id="h-bar-l" style="background:linear-gradient(90deg,#3B82F6,#60A5FA);border-radius:7px 0 0 7px;transition:width 0.4s cubic-bezier(0.4,0,0.2,1);width:64.7%;"></div>
+            <div style="background:linear-gradient(90deg,#F87171,#EF4444);border-radius:0 7px 7px 0;flex:1;"></div>
+            <div style="position:absolute;left:50%;top:-2px;width:2px;height:calc(100% + 4px);background:rgba(255,255,255,0.4);transform:translateX(-50%);border-radius:1px;"></div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div style="font-size:9px;color:rgba(255,255,255,0.22);">실시간 추이 (최근 30초)</div>
+              <div style="display:flex;gap:10px;">
+                <div style="display:flex;align-items:center;gap:3px;"><div style="width:10px;height:2px;background:#60A5FA;border-radius:1px;"></div><span style="font-size:9px;color:rgba(255,255,255,0.28);">왼쪽</span></div>
+                <div style="display:flex;align-items:center;gap:3px;"><div style="width:10px;height:2px;background:#F87171;border-radius:1px;"></div><span style="font-size:9px;color:rgba(255,255,255,0.28);">오른쪽</span></div>
+              </div>
+            </div>
+            <div style="height:72px;"><canvas id="live-chart"></canvas></div>
+          </div>
+
+          <div id="h-diff-note" style="border-radius:10px;padding:9px 12px;font-size:11px;line-height:1.5;background:rgba(248,113,113,0.15);color:#FCA5A5;">
+            ⚠ 편차 29.4%p — 오른쪽 발목에 힘을 더 실어보세요
+          </div>
+        </div>
+
+        <!-- 보조 지표 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="card" style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+              <span style="font-size:13px;">👟</span>
+              <div style="font-size:11px;color:var(--text2);font-weight:500;">걸음수</div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:3px;"><span style="font-size:22px;font-weight:700;color:#111;letter-spacing:-0.4px;" id="v-steps">5,089</span></div>
+            <div style="font-size:10px;color:#9B9B98;margin-top:4px;">목표 8,000</div>
+            <div style="height:4px;background:#EBEBEA;border-radius:2px;margin-top:7px;overflow:hidden;">
+              <div style="height:100%;background:linear-gradient(90deg,#1D9E75,#34D399);border-radius:2px;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);" id="v-steps-bar"></div>
+            </div>
+          </div>
+          <div class="card" style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+              <span style="font-size:13px;">📏</span>
+              <div style="font-size:11px;color:var(--text2);font-weight:500;">보폭</div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:2px;"><span style="font-size:22px;font-weight:700;color:#111;letter-spacing:-0.4px;" id="v-stride">71</span><span style="font-size:11px;color:#9B9B98;font-weight:500;">cm</span></div>
+            <div style="font-size:10px;margin-top:4px;color:#0A6647;font-weight:500;" id="v-stride-note">▲ 주간 최고</div>
+          </div>
+          <div class="card" style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+              <span style="font-size:13px;">🛡️</span>
+              <div style="font-size:11px;color:var(--text2);font-weight:500;">충격 흡수</div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:2px;"><span style="font-size:22px;font-weight:700;letter-spacing:-0.4px;" id="v-shock">85</span><span style="font-size:11px;color:#9B9B98;font-weight:500;">%</span></div>
+            <div style="font-size:10px;margin-top:4px;color:#0A6647;font-weight:500;" id="v-shock-note">▲ 3%p 어제 대비</div>
+          </div>
+          <div class="card" style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+              <span style="font-size:13px;">⚡</span>
+              <div style="font-size:11px;color:var(--text2);font-weight:500;">피로도</div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:2px;"><span style="font-size:22px;font-weight:700;color:#952B10;letter-spacing:-0.4px;" id="v-fatigue">100</span><span style="font-size:11px;color:#9B9B98;font-weight:500;">%</span></div>
+            <div style="font-size:10px;margin-top:4px;color:#952B10;font-weight:500;" id="v-fatigue-note">▲ 주의 구간</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ WORKOUT ══ -->
+      <div class="screen" id="s-workout">
+
+        <div class="tabrow">
+          <button class="tb on" id="ph-b" onclick="ph('b')">운동 전</button>
+          <button class="tb" id="ph-d" onclick="ph('d')">운동 중</button>
+          <button class="tb" id="ph-a" onclick="ph('a')">운동 후</button>
+        </div>
+
+        <div class="coach" id="ph-coach">
+          <div class="c-head"><div class="c-av">AI</div><div class="c-nm" id="ph-nm">운동 전 확인</div></div>
+          <div class="c-txt" id="ph-txt">오늘 발목 안정성 <strong>68점</strong>으로 평소보다 낮아요. 저강도로 시작하면 충격 흡수율을 <strong>85% 이상</strong> 유지할 수 있습니다.</div>
+        </div>
+
+        <div class="section-row">
+          <div class="card">
+            <div class="clabel">오늘 추천 강도</div>
+            <div class="irow">
+              <div class="ilb">저강도</div>
+              <div class="ibar"><div class="ifill" style="width:100%;background:var(--green);"></div></div>
+              <div class="ival g">추천 ✓</div>
+            </div>
+            <div class="irow">
+              <div class="ilb">중강도</div>
+              <div class="ibar"><div class="ifill" style="width:55%;background:var(--amber);"></div></div>
+              <div class="ival w">가능</div>
+            </div>
+            <div class="irow">
+              <div class="ilb">고강도</div>
+              <div class="ibar"><div class="ifill" style="width:18%;background:var(--red);"></div></div>
+              <div class="ival r">비권장</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="clabel">실시간 측정값</div>
+            <div class="mg2">
+              <div class="mc"><div class="ml">현재 페이스</div><div><span class="mv">6:20</span><span class="mu">/km</span></div></div>
+              <div class="mc"><div class="ml">케이던스</div><div><span class="mv">162</span><span class="mu">spm</span></div></div>
+              <div class="mc"><div class="ml">착지 자세</div><div class="mv g" style="font-size:16px;">양호</div></div>
+              <div class="mc"><div class="ml">좌우 편차</div><div><span class="mv w">10</span><span class="mu">%p</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="clabel">보폭 분포 — 오늘</div>
+          <div class="legend">
+            <div class="leg"><div class="lsq" style="background:var(--green);"></div>빈도</div>
+          </div>
+          <div class="chart-wrap" style="height:100px;"><canvas id="c-stride"></canvas></div>
+        </div>
+
+        <div class="bbar">
+          <button class="btnav" onclick="go('home')">취소</button>
+          <button class="btnav pr">시작하기</button>
+        </div>
+      </div>
+
+      <!-- ══ INSIGHTS ══ -->
+      <div class="screen" id="s-insights">
+
+        <!-- 오늘 내 몸 상태 요약 -->
+        <div class="card">
+          <div class="clabel">오늘 내 몸 상태</div>
+          <div class="numrow">
+            <div class="numcard">
+              <div class="numval w">68</div>
+              <div class="numlb">발목 안정성</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px;">100점 만점</div>
+            </div>
+            <div class="numcard">
+              <div class="numval r">29.4%p</div>
+              <div class="numlb">좌우 차이</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px;">목표 0%p</div>
+            </div>
+            <div class="numcard">
+              <div class="numval g">85%</div>
+              <div class="numlb">충격 흡수</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px;">높을수록 좋음</div>
+            </div>
+            <div class="numcard">
+              <div class="numval g">87%</div>
+              <div class="numlb">안전 착지</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px;">목표 90%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 좌우 균형 -->
+        <div class="card">
+          <div class="clabel">좌우 균형</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="text-align:center;">
+              <div style="font-size:20px;font-weight:700;color:var(--blue);">64.7%</div>
+              <div style="font-size:11px;color:var(--text2);">왼쪽</div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;line-height:1.4;">목표<br>50:50</div>
+            <div style="text-align:center;">
+              <div style="font-size:20px;font-weight:700;color:var(--red);">35.3%</div>
+              <div style="font-size:11px;color:var(--text2);">오른쪽</div>
+            </div>
+          </div>
+          <div class="bal-bar2">
+            <div class="bf bl" style="width:64.7%"></div>
+            <div class="bf br" style="width:35.3%"></div>
+            <div class="bctr"></div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--red);font-weight:500;">
+            ⚠ 오른쪽 발목에 무게가 덜 실리고 있어요. 보폭을 조금 줄여보세요.
+          </div>
+        </div>
+
+        <!-- 자세 점수 — 일반인 눈높이 -->
+        <div class="card">
+          <div class="clabel">오늘 자세는 어땠나요?</div>
+          <div class="body-details">
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">케이던스</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:85%;background:var(--green);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val g">162spm</div>
+                <div style="font-size:9px;color:var(--text3);">목표 160~180</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">보폭 균일성</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:78%;background:var(--green);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val g">양호</div>
+                <div style="font-size:9px;color:var(--text3);">78점</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">발목 안정성</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:68%;background:var(--amber);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val w">주의</div>
+                <div style="font-size:9px;color:var(--text3);">68점</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">좌우 대칭</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:55%;background:var(--amber);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val w">보통</div>
+                <div style="font-size:9px;color:var(--text3);">55점</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">충격 분산</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:48%;background:var(--red);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val r">부족</div>
+                <div style="font-size:9px;color:var(--text3);">48점</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="dr-label" style="min-width:68px;">피로도</div>
+              <div class="dr-bar"><div class="dr-fill" style="width:72%;background:var(--amber);"></div></div>
+              <div style="text-align:right;min-width:52px;">
+                <div class="dr-val w">주의</div>
+                <div style="font-size:9px;color:var(--text3);">72%</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- AI 한마디 -->
+        <div class="coach">
+          <div class="c-head"><div class="c-av">AI</div><div class="c-nm">오늘의 한마디</div></div>
+          <div class="c-txt">왼쪽 다리가 오늘도 잘 버텨줬어요 💪<br>어제보다 걸음이 더 균형 잡혔고, 보폭을 3cm만 더 넓히면 내일은 더 좋아질 수 있어요!</div>
+        </div>
+
+        <div class="bbar">
+          <button class="btnav">전문가 연결 ↗</button>
+          <button class="btnav pr" onclick="go('workout')">오늘 운동하기</button>
+        </div>
+      </div>
+
+      <!-- ══ REWARDS ══ -->
+      <div class="screen" id="s-rewards">
+
+        <div class="card">
+          <div class="clabel">이달 달성 현황</div>
+          <div class="prog-section">
+            <div class="prog-row">
+              <div class="prog-header"><span>연속 운동 기록</span><span class="prog-val">12 / 30일</span></div>
+              <div class="prog-bg"><div class="prog-fill" style="width:40%;background:var(--green);"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-header"><span>안전 착지 비율</span><span class="prog-val">87%</span></div>
+              <div class="prog-bg"><div class="prog-fill" style="width:87%;background:var(--blue);"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-header"><span>좌우 밸런스 목표 달성</span><span class="prog-val">4 / 30일</span></div>
+              <div class="prog-bg"><div class="prog-fill" style="width:13%;background:var(--amber);"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="clabel">획득 가능한 혜택</div>
+          <div class="rg">
+            <div class="rc"><div class="rbig">0.9%</div><div class="rname">보험료 할인</div><div class="rdesc">건강보험공단 연동 — 18일 남음</div></div>
+            <div class="rc"><div class="rbig">20%</div><div class="rname">러닝화 쿠폰</div><div class="rdesc">내 착지 데이터 최적화 신발 추천</div></div>
+            <div class="rc"><div class="rbig">+320</div><div class="rname">지자체 포인트</div><div class="rdesc">안전 보행 시 자동 적립</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="clabel">이번 달 적립 추이</div>
+          <div class="chart-wrap" style="height:100px;"><canvas id="c-rewards"></canvas></div>
+        </div>
+
+        <div class="coach" style="background:#EEEDFE;border-left-color:#534AB7;">
+          <div class="c-head"><div class="c-av" style="background:#534AB7;">🎯</div><div class="c-nm" style="color:#3C3489;">목표까지</div></div>
+          <div class="c-txt" style="color:#26215C;">보험료 할인까지 18일 남았어요. 매일 안전하게 걸으면 다음 달부터 바로 적용됩니다!</div>
+        </div>
+
+        <div class="bbar">
+          <button class="btnav">혜택 상세보기 ↗</button>
+          <button class="btnav pr" onclick="go('workout')">운동으로 적립</button>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /phone-frame -->
+
+<script>
+const screens = {
+  home:    { t:'오늘의 발걸음',   s:'2026년 5월 26일 · 화요일' },
+  workout: { t:'운동 가이드',     s:'컨디션 기반 맞춤 코칭' },
+  insights:{ t:'분석 인사이트',  s:'이번 주 운동 패턴 분석' },
+  rewards: { t:'건강 리워드',    s:'포인트 · 혜택 · 연동' }
+};
+const navIdx = { home:0, workout:1, insights:2, rewards:3 };
+const phases = {
+  b:{ nm:'운동 전 확인', txt:'오늘 발목 안정성 <strong>68점</strong>으로 평소보다 낮아요. 저강도로 시작하면 충격 흡수율을 <strong>85% 이상</strong> 유지할 수 있습니다.' },
+  d:{ nm:'운동 중 안내', txt:'좌우 충격량 편차가 <strong>10%p</strong>로 커지고 있어요. 페이스를 <strong>6:40/km</strong>으로 줄이면 균형을 맞출 수 있습니다.' },
+  a:{ nm:'운동 후 요약', txt:'오늘 총 <strong>5,089보</strong>, 평균 보폭 <strong>71cm</strong>. 후반부 피로 신호가 늘었어요. 다음 운동은 조금 짧게 시작해볼까요?' }
+};
+
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('on');
+  document.getElementById('ttl').textContent = screens[id].t;
+  document.getElementById('tsub').textContent = screens[id].s;
+  document.querySelectorAll('.nb').forEach((b,i) => b.classList.toggle('on', i===navIdx[id]));
+}
+function ph(p) {
+  ['b','d','a'].forEach(x => document.getElementById('ph-'+x).classList.toggle('on', x===p));
+  document.getElementById('ph-nm').textContent = phases[p].nm;
+  document.getElementById('ph-txt').innerHTML = phases[p].txt;
+}
+
+// Charts
+const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+const gc = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+const tc = isDark ? 'rgba(255,255,255,0.4)'  : 'rgba(0,0,0,0.35)';
+const base = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} };
+const sc = (mn,mx) => ({ x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}}, y:{grid:{color:gc},ticks:{color:tc,font:{size:10}},min:mn,max:mx} });
+
+// 헬퍼: canvas가 실제로 존재할 때만 Chart 생성 (안전 가드)
+function mkChart(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  return new Chart(el, cfg);
+}
+
+mkChart('c-stability', {
+  type:'line',
+  data:{
+    labels:['월','화','수','목','금','토','일'],
+    datasets:[
+      {data:[72,68,75,71,80,78,85],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.09)',borderWidth:2,tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#1D9E75',pointBorderColor:'#fff',pointBorderWidth:1.5},
+      {data:[70,70,70,70,70,70,70],borderColor:'#D85A30',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false}
+    ]
+  },
+  options:{...base,scales:sc(60,100)}
+});
+
+mkChart('c-impact-home', {
+  type:'bar',
+  data:{
+    labels:['06시','08시','10시','12시','14시','16시','18시'],
+    datasets:[
+      {label:'좌측',data:[210,220,225,222,228,225,215],backgroundColor:'#378ADD'},
+      {label:'우측',data:[200,210,225,238,248,245,235],backgroundColor:'#D85A30'}
+    ]
+  },
+  options:{...base,scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10}},title:{display:true,text:'N',color:tc,font:{size:10}}}}}
+});
+
+mkChart('c-stride', {
+  type:'bar',
+  data:{
+    labels:['55cm','60cm','65cm','68cm','71cm','75cm','80cm'],
+    datasets:[{data:[3,8,15,22,28,14,6],backgroundColor:'#1D9E75'}]
+  },
+  options:{...base,scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}}}}
+});
+
+mkChart('c-phase-chart', {
+  type:'line',
+  data:{
+    labels:['워밍업','초반','중반','후반','마무리'],
+    datasets:[
+      {data:[52,54,57,60,62],borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.08)',borderWidth:2,tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#378ADD'},
+      {data:[48,46,43,40,38],borderColor:'#D85A30',backgroundColor:'rgba(216,90,48,.08)',borderWidth:2,tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#D85A30'},
+      {data:[50,50,50,50,50],borderColor:'#888',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false}
+    ]
+  },
+  options:{...base,scales:sc(30,70)}
+});
+
+mkChart('c-rewards', {
+  type:'bar',
+  data:{
+    labels:['1주','2주','3주','4주'],
+    datasets:[{data:[80,110,95,35],backgroundColor:'#1D9E75'}]
+  },
+  options:{...base,scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}}}}
+});
+
+// ── 언어 선택 ──
+const i18n = {
+  ko: {
+    screens: {
+      home:    { t:'오늘의 발걸음',  s:'2026년 5월 26일 · 화요일' },
+      workout: { t:'운동 가이드',    s:'컨디션 기반 맞춤 코칭' },
+      insights:{ t:'분석 인사이트', s:'이번 주 운동 패턴 분석' },
+      rewards: { t:'건강 리워드',   s:'포인트 · 혜택 · 연동' }
+    },
+    live: '기기 연결됨',
+    balTitle: '좌우 밸런스 지지 비율',
+    balTarget: '목표 50 : 50',
+    leftLabel: '왼쪽 지탱력', rightLabel: '오른쪽 지탱력',
+    leftText: '왼쪽', rightText: '오른쪽',
+  },
+  en: {
+    screens: {
+      home:    { t:"Today's Steps",      s:'Tuesday, May 26, 2026' },
+      workout: { t:'Workout Guide',      s:'Personalized Coaching' },
+      insights:{ t:'Insights',           s:'Weekly Movement Analysis' },
+      rewards: { t:'Health Rewards',     s:'Points · Benefits · Links' }
+    },
+    live: 'Device Connected',
+    balTitle: 'Left / Right Balance',
+    balTarget: 'Target 50 : 50',
+    leftLabel: 'Left Support', rightLabel: 'Right Support',
+    leftText: 'Left', rightText: 'Right',
+  },
+  ja: {
+    screens: {
+      home:    { t:'今日の歩み',         s:'2026年5月26日 · 火曜日' },
+      workout: { t:'ワークアウト',        s:'コンディション別コーチング' },
+      insights:{ t:'分析インサイト',      s:'今週の動きパターン分析' },
+      rewards: { t:'ヘルスリワード',      s:'ポイント · 特典 · 連携' }
+    },
+    live: 'デバイス接続中',
+    balTitle: '左右バランス比率',
+    balTarget: '目標 50 : 50',
+    leftLabel: '左サポート', rightLabel: '右サポート',
+    leftText: '左', rightText: '右',
+  },
+  zh: {
+    screens: {
+      home:    { t:'今日步伐',           s:'2026年5月26日 · 星期二' },
+      workout: { t:'运动指导',           s:'基于状态的个性化训练' },
+      insights:{ t:'分析洞察',           s:'本周运动模式分析' },
+      rewards: { t:'健康奖励',           s:'积分 · 优惠 · 联动' }
+    },
+    live: '设备已连接',
+    balTitle: '左右平衡支撑比例',
+    balTarget: '目标 50 : 50',
+    leftLabel: '左侧支撑', rightLabel: '右侧支撑',
+    leftText: '左', rightText: '右',
+  }
+};
+
+let currentLang = 'ko';
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = i18n[lang];
+
+  // 버튼 active 상태
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('on'));
+  const idx = ['ko','en','ja','zh'].indexOf(lang);
+  document.querySelectorAll('.lang-btn')[idx].classList.add('on');
+
+  // live pill
+  document.getElementById('live-label').textContent = t.live;
+
+  // topbar (현재 화면 기준)
+  const scr = Object.keys(i18n.ko.screens).find(k =>
+    document.getElementById('s-'+k).classList.contains('on')
+  ) || 'home';
+  document.getElementById('ttl').textContent = t.screens[scr].t;
+  document.getElementById('tsub').textContent = t.screens[scr].s;
+
+  // 밸런스 카드 텍스트
+  const balTitleEl = document.querySelector('.bal-header-title');
+  const balTargetEl = document.querySelector('.bal-header-target');
+  if (balTitleEl) balTitleEl.textContent = t.balTitle;
+  if (balTargetEl) balTargetEl.textContent = t.balTarget;
+  document.querySelector('.bal-side-label:first-of-type') &&
+    (document.querySelectorAll('.bal-side-label')[0].textContent = t.leftLabel);
+  document.querySelectorAll('.bal-side-label')[1] &&
+    (document.querySelectorAll('.bal-side-label')[1].textContent = t.rightLabel);
+
+  // screens 번역 저장 (go() 함수가 참조)
+  Object.assign(screens, t.screens);
+}
+
+const histL = Array(30).fill(64.7);
+const histR = Array(30).fill(35.3);
+
+const chart = mkChart('live-chart', {
+  type: 'line',
+  data: {
+    labels: Array(30).fill(''),
+    datasets: [
+      { data: [...histL], borderColor:'#60A5FA', borderWidth:2, tension:0.4, pointRadius:0, fill:false },
+      { data: [...histR], borderColor:'#F87171', borderWidth:2, tension:0.4, pointRadius:0, fill:false },
+      { data: Array(30).fill(50), borderColor:'rgba(255,255,255,0.15)', borderWidth:1, borderDash:[4,3], pointRadius:0, fill:false }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ display:false },
+      y:{ min:28, max:72, grid:{ color:'rgba(255,255,255,0.06)' }, ticks:{ color:'rgba(255,255,255,0.28)', font:{size:9}, stepSize:10 } }
+    }
+  }
+});
+
+// ─────────────────────────────────────────────
+// 라이브 갱신 — 로직 틱 + 프레임 단위 부드러운 보간
+// ─────────────────────────────────────────────
+// 표시값(displayed) ← 보간 →  목표값(target)
+// 목표값은 LOGIC_INTERVAL마다 변경, 표시값은 매 프레임마다 lerp
+// 결과: 1초에 한 번씩 점프하던 숫자가 60fps로 부드럽게 흐름
+
+const LOGIC_INTERVAL = 700;   // ms — 새 목표값 생성 주기 (≈1.4Hz)
+const LERP_FACTOR    = 0.18;  // 프레임당 보간 비율 (0~1, 클수록 빠르게 따라감)
+
+// 현재 표시값 (화면에 실제로 그리는 값)
+const disp = {
+  L: 64.7, diff: 29.4,
+  distKm: 3.24, pace: 390, steps: 5089,
+  stride: 71, shock: 85, fatigue: 100,
+};
+// 목표값 (틱마다 갱신)
+const tgt = { ...disp };
+
+let totSec = 18*60+32;
+let lastLogic = 0;
+
+function $(id){ return document.getElementById(id); }
+function fmtTime(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function fmtPace(s){ return Math.floor(s/60)+"'"+String(Math.round(s%60)).padStart(2,'0')+'"'; }
+function lerp(a,b,t){ return a + (b-a)*t; }
+
+// 로직 틱 — 새 목표값 생성
+function logicTick() {
+  // 좌우 밸런스 목표
+  const d = (Math.random()-0.48)*4.5;
+  let L = Math.min(Math.max(tgt.L + d, 54), 76);
+  L = Math.round(L*10)/10;
+  tgt.L = L;
+  tgt.diff = Math.abs(L - (100-L));
+
+  // 페이스 목표 (s/km)
+  tgt.pace = 390 + (Math.random()-0.5)*15;
+
+  // 거리: 1초당 1/pace 씩 누적
+  tgt.distKm += (LOGIC_INTERVAL/1000) / tgt.pace;
+
+  // 시간 (정확한 정수 초 누적)
+  totSec += LOGIC_INTERVAL/1000;
+
+  // 걸음수 (페이스 기반 자연 누적)
+  tgt.steps += Math.floor((LOGIC_INTERVAL/1000) * 2.7);
+
+  // 보폭
+  tgt.stride = Math.min(Math.max(tgt.stride + (Math.random()-0.5)*2, 64), 78);
+
+  // 충격 흡수
+  tgt.shock = Math.min(Math.max(tgt.shock + (Math.random()-0.5)*1.5, 78), 94);
+
+  // 피로도 (점진 증가)
+  tgt.fatigue = Math.min(tgt.fatigue + Math.random()*0.25, 100);
+}
+
+// 프레임 렌더 — 표시값을 목표값으로 부드럽게 보간 후 DOM 갱신
+function render(now) {
+  if (now - lastLogic >= LOGIC_INTERVAL) {
+    logicTick();
+    lastLogic = now;
+  }
+
+  // 보간
+  disp.L       = lerp(disp.L,       tgt.L,       LERP_FACTOR);
+  disp.diff    = lerp(disp.diff,    tgt.diff,    LERP_FACTOR);
+  disp.distKm  = lerp(disp.distKm,  tgt.distKm,  LERP_FACTOR);
+  disp.pace    = lerp(disp.pace,    tgt.pace,    LERP_FACTOR);
+  disp.steps   = lerp(disp.steps,   tgt.steps,   LERP_FACTOR);
+  disp.stride  = lerp(disp.stride,  tgt.stride,  LERP_FACTOR);
+  disp.shock   = lerp(disp.shock,   tgt.shock,   LERP_FACTOR);
+  disp.fatigue = lerp(disp.fatigue, tgt.fatigue, LERP_FACTOR);
+
+  const L = disp.L;
+  const R = 100 - L;
+  const diff = Math.abs(L - R);
+
+  // 밸런스 큰 숫자
+  if($('h-left'))    $('h-left').textContent    = L.toFixed(1);
+  if($('h-right'))   $('h-right').textContent   = R.toFixed(1);
+  if($('h-diff-num'))$('h-diff-num').textContent = diff.toFixed(1);
+  if($('h-bar-l'))   $('h-bar-l').style.width   = L+'%';
+
+  // 편차 메시지/색상
+  const msg = $('h-diff-note');
+  const nd  = $('h-diff-num');
+  if(msg){
+    if(diff>20){
+      msg.textContent = '⚠ 편차 '+diff.toFixed(1)+'%p — 오른쪽 발목에 힘을 더 실어보세요';
+      msg.style.background = 'rgba(248,113,113,0.15)';
+      msg.style.color = '#FCA5A5';
+      if(nd) nd.style.color = '#FCA5A5';
+    } else {
+      msg.textContent = '✓ 편차 '+diff.toFixed(1)+'%p — 균형이 잡히고 있어요!';
+      msg.style.background = 'rgba(74,222,128,0.12)';
+      msg.style.color = '#86EFAC';
+      if(nd) nd.style.color = '#86EFAC';
+    }
+  }
+
+  // 라이브 차트: 매 프레임 보간된 히스토리 push (틱이 아니라 프레임 단위로)
+  // 단, push는 logic tick에서만 발생하도록 하고 frame에서는 마지막 값을 부드럽게 갱신
+  histL[histL.length-1] = L;
+  histR[histR.length-1] = R;
+  if(chart){
+    chart.data.datasets[0].data = histL;
+    chart.data.datasets[1].data = histR;
+    chart.update('none');
+  }
+
+  // 분석 화면 밸런스 (있을 때)
+  if($('live-left'))  $('live-left').textContent  = L.toFixed(1);
+  if($('live-right')) $('live-right').textContent = R.toFixed(1);
+  if($('live-diff'))  { $('live-diff').textContent = diff.toFixed(1); $('live-diff').style.color = diff>20?'#952B10':'#7A4510'; }
+  if($('live-bar-l')) $('live-bar-l').style.width = L+'%';
+
+  // 시간
+  if($('v-time')) $('v-time').textContent = fmtTime(Math.floor(totSec));
+
+  // 거리
+  if($('v-dist')) $('v-dist').innerHTML = disp.distKm.toFixed(2)+'<span style="font-size:11px;font-weight:500;color:#9B9B98;margin-left:2px;">km</span>';
+
+  // 페이스
+  if($('v-pace')) $('v-pace').innerHTML = fmtPace(disp.pace)+'<span style="font-size:11px;font-weight:500;color:#9B9B98;margin-left:2px;">/km</span>';
+
+  // 걸음수
+  if($('v-steps')) $('v-steps').textContent = Math.round(disp.steps).toLocaleString();
+  if($('v-steps-bar')) $('v-steps-bar').style.width = Math.min(disp.steps/8000*100,100)+'%';
+
+  // 보폭
+  if($('v-stride')) $('v-stride').textContent = Math.round(disp.stride);
+
+  // 충격 흡수
+  if($('v-shock')){ $('v-shock').textContent = Math.round(disp.shock); $('v-shock').style.color = disp.shock>=85?'#0A6647':'#7A4510'; }
+
+  // 피로도
+  if($('v-fatigue')){ $('v-fatigue').textContent = Math.round(disp.fatigue); $('v-fatigue').style.color = disp.fatigue>=80?'#952B10':'#0A6647'; }
+  if($('v-fatigue-note')){ $('v-fatigue-note').textContent = disp.fatigue>=80?'▲ 주의 구간':'양호'; $('v-fatigue-note').style.color = disp.fatigue>=80?'#952B10':'#0A6647'; }
+
+  requestAnimationFrame(render);
+}
+
+// 차트 히스토리 슬라이딩: logic tick과 별도로 동작
+setInterval(() => {
+  histL.push(disp.L); histL.shift();
+  histR.push(100-disp.L); histR.shift();
+}, LOGIC_INTERVAL);
+
+// 시작
+logicTick();
+requestAnimationFrame(render);
+</script>
+</div><!-- /app -->
+</div><!-- /phone-frame -->
+</body>
+</html>
